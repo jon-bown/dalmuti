@@ -1,0 +1,894 @@
+---
+title: "One Player Takes All - The Probability of a Revolution"
+author: Jonathan Bown
+date: August 2018
+header-includes:
+    - \usepackage{setspace}\doublespacing
+    - \usepackage{amsmath}
+    - \usepackage{amsthm}
+    - \usepackage[utf8]{inputenc}
+    - \usepackage[english]{babel}
+    - \newtheorem{theorem}{Theorem}
+    - \title{One Player Takes All \\ \textit{The Probability of a Revolution}}
+output: 
+  pdf_document:
+    number_sections: true
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(gridExtra)
+library(grid)
+library(gtable)
+```
+
+
+
+\newpage
+
+\section{Abstract:} The mathematical idea of a type of "One Player Takes All" scenario, in which there are a set number of special cards that go to one player from a larger group of cards, is explored in the context of one of my favorite card games, The Great Dalmuti. The Great Dalmuti is a very unique game, not necessarily because of how it is played, but because of the structure of the card deck. This game is played similar to the popular 'Scum' game with a different deck. The deck contains 80 cards. Each card has a rank. The rank corresponds to how many cards of that same rank are in the deck. So there are two '2' cards, three '3' cards, and so on. The game is played in 'hands', the person who is deemed 'The Great Dalmuti' starts by placing a card or several cards in a stack, then each player sequentially has the opportunity to place cards or 'pass' according to what the players cards allow them to do. The first person to be out of cards 'wins' that round and becomes The Great Dalmuti. After each person runs out of cards, new positions are chosen according to when they ran out of cards, the deck is shuffled and redealt. After the cards are dealt there is an event called 'Taxation' in which The Great Dalmuti recieves the two best cards from The Greater Peon and The Lesser Dalmuti recieves the best card from The Lesser Peon. The Dalmuties also give two and one card respectively back to the Peon in exchange. The only time this event does not occur is when there is a 'Revolution' which occurs if any player recieves the two Jester cards after all the cards are dealt. The analysis begins by trying to determine the probability of a Revolution, or the probability of one player recieving two jesters which cancels the taxation event. There are two realistic ways to deal the cards, this analysis also incorporates those and compares if one is better/worse than the other. My hypothesis is that the probabilty will change depending on how the cards are dealt. This hypothesis leads to some interesting mathematical results in the process of generalizing this idea to other problems with similar charactaristics. Along the way there are interesting applications of Probability, Combinatorics, and Analysis. I also use the R language to check my formulas and output plots/tables of probabilities. 
+
+
+\subsection{\textbf{Notation and Definitions}}
+
+
+\subsubsection{Formulas}
+\underline{\emph{Floor Function}}: $\lfloor x \rfloor = max \{m \in \mathbb{Z} | m \leq x\}$, or the greatest integer that is less than $x$. \newline
+\underline{\emph{Ceiling Function}}: $\lceil x \rceil = min \{m \in \mathbb{Z} | m \geq x\}$, or the smallest integer that is greater than $x$. \newline
+\underline{\emph{Combination}}: ${n \choose r} = \frac{n!}{r!(n-r)!}$, or the number of unique groupings of $r$ elements from a set of $n$ items. Special case needed is ${0 \choose 1} = 0$. \newline
+\underline{\emph{Product Notation}}: $\prod_{k=1}^n k = (1)(2)(3)...(n)$ \newline
+\underline{\emph{Factorial}}: $n!= \prod_{k=1}^n k =  n(n-1)(n-2) ...(2)(1) = \prod_{k=0}^{n-1} (n-k)$. Special case needed is $0! = 1$. \newline
+\underline{\emph{Multinomial Coefficient}}: ${n \choose k_{1},k_{2},\ldots ,k_{m}}={\frac {n!}{k_{1}!\,k_{2}!\cdots k_{m}!}}$, where $\displaystyle \sum_{i=1}^{m} k_i = n$. This formula gives us a representation of choosing $k_1$ of the total $n$ labeled 1, then from the remaining $n-k_1$, choose $k_2$, then from the remaining $n - k_1-k_2$ choose $k_3$ and so on. Multiplying these combinations together gives us the formula for the Multinomial Coefficient.  \newline
+
+\subsubsection{Definitions}
+\begin{enumerate}
+\item \underline{\emph{Sample Space}}: The Sample Space of an experiement is the set of all distinct possible outcomes, or simple events. I denote this set by $S$. 
+\item \underline{\emph{Probability Mass Function (pmf)}}: The probability mass function is defined as $f_X(x) = P(X = x) = P(\{s \in S: X(x) = x\})$ with $\displaystyle \sum_{x \in A} f_X(x) = 1$ 
+\item The event of a revolution, denoted by $R$ and the event of no revolution denoted by $R^c$. 
+\item N is the number of players.
+\item M is the number of cards or objects of interest that we are choosing from.
+\item k is the number of special cards or special objects of interest.
+\end{enumerate}
+
+
+\subsection{\textbf{Game Assumptions:}}
+
+1. Assuming the deck is shuffled after each round, so the chance of picking a particular card doesn't change round to round.
+2. Assuming that when there is taxation, the Jesters are not exchanged. This is because by themselves they have rank 13, so they will never be the 'best' card of the Peon, and they are wild cards when combined with other cards. So they will never be given up by the Dalmuti or the Peon, unless they have a bad strategy. We are only interested in jesters that appear together before taxation. 
+3. The game indicates that it can be played with 3+ players. I am going to assume that the maximum player count is 40, this is the case when everyone has 2 cards. Anything more than this would not result in a revolution. 
+\newline
+
+<br />
+
+The person dealing the cards is called the 'dealer', and dealing them face down and giving one card to one player at a time in order until all the cards are dealt. I will show the formula for calculating the probability of someone getting two jesters and then logically argue why this is the formula I came up with. I use a few definitions in this example as well:
+
+1. Stacked Dealing - This is when the card dealer hands out cards to each player in a 'stack'. So if there are 5 players, the first player recieves 16 cards, the second player recieves the next 16 cards, and so on. The main idea here is that the order of the cards is not as important in the calculation of the probabilty. Regardless of where the 2 jesters fall in one hand there will be a 'revolution'. The first player recieving two jesters in the first two cards or the last two cards in the 16 should be counted as the same outcome. 
+2. Sequential Dealing - This is the more standard way of dealing the cards. If there are 5 players there is one card dealt to each player in order until the deck runs out. In this case the ordering of the cards is much more important. The cards must align in the right way to produce a revolution. 
+3. Remainder Sequence (R.S.) - The sequence of cards that is passed out after the dealer passes out the same number of cards to each player, if $N$ doesn't divide 80, then the remainder is the difference between 80 and the closest integer that is divisible by $N$.
+4. Divisible sequence (D.S.) - The sequence of cards dealt to each player that corresponds to the number $\lfloor{80/N}\rfloor$.
+
+
+
+\section{\textbf{Bernoulli Distribution}}
+
+In this experiment, there are only two possible outcomes. Either a player recieves both jesters or they don't. Thus the sample space will contain only two elements. The event of a revolution, denoted by $R$ and the event of no revolution denoted by $R^c$. Thus the sample space in this context can be represented by $S = \{R, R^c\}$. We can represent this by treating $R$ as a bernoulli random variable that has possible outcomes $\{0,1\}$. This is commonly denoted $R \sim Ber(p)$ where $p$ is the probabiltiy of a 'success' or $p = P(R = 1)$. Thus we have the following properties that follow:
+
+\begin{center}
+$$P(R^c) = 1- P(R) = 1-p $$
+$$f_R(r; p) = \begin{cases} p, & \text{if } r = 1 \\  1-p & \text{if }   r = 0   \end{cases} $$
+$$E[R] = P(R = 1) = p, Var[R] = p(1-p)$$
+
+\end{center}
+
+These are important properties to be aware of because the plots in this paper are actually showing the expectation of each bernoulli random variable $R$ with a given number of players, rather than a type of probability distribution.
+
+\section{\textbf{Sequential Dealing Formula}}
+
+Let there be $N$ players and 80 cards.
+
+\begin{center}
+$$P(R = 1 | N) = \frac{{\binom{N}{1}}{\lfloor80/N\rfloor \choose 2}2!78! + {\lfloor80/N\rfloor \choose 1}{80 - N\lfloor80/N\rfloor  \choose 1}2!{1 \choose 1}78!}{80!}$$
+$$ = \frac{N(\lfloor80/N\rfloor)(\lfloor80/N\rfloor - 1) + (2)(\lfloor80/N\rfloor)(80- N\lfloor80/N\rfloor)}{(80)(79)} $$
+$$ = \frac{N(\lfloor80/N\rfloor)(\lfloor80/N\rfloor - 1) + (2)(\lfloor80/N\rfloor)(r)}{(80)(79)} $$
+
+\end{center}
+
+\subsection{Formula Logic}
+
+1. There are only two ways that a player recieves both jester cards after the cards are dealt sequentially. Either the player gets them while the dealer is giving out the Divisible Sequence or the player gets one card during the Divisible Sequence and one card during the Remainder Sequence. There are no other possible ways that a player can get both jesters with this method of dealing.
+2. The minumum number of cards a player is passed while the cards are dealt is given by $\lfloor80/N\rfloor$, this is the number each player is guaranteed to recieve. So if a player recieves 20 cards, the jesters need to be passed to that same player in one of the $\lfloor80/N\rfloor$ cards in the Divisible Sequence. OR the player needs to recieve one of them in the Divisible Sequence and then recieve one of them in the Remainder Sequence. There is only one card given to players that recieve a card during the Remainder Sequence.  
+3. The number of cards passed out in each phase of the Divisible Sequence is given by $N$. 
+4. The use of factorials and not combinations for the other remaining cards is important because I am interested in the ordering of possible card sequences that would result in two jesters being passed to one player. This also has to do with the way the cards are being passed out in this case. 
+5. Because a Revolution in the Divisible Sequence and the Remainder Sequence are disjoint events, we can take the probability of either of them occuring as the sum of their probabilities. They are disjoint because if a player recieves two jesters during the divisible sequence, they cannot recieve any jesters during the remainder sequence and vice versa. 
+
+\begin{center}
+
+$P(R = 1 | N) = P($ Revolution in D.S. $| N) + P($Revolution in R.S. $| N)$
+
+
+\end{center}
+
+6. This formula has the property that when $N$ divides 80, the right hand side will be zero as desired because $\binom{0}{1} = 0$. 
+
+
+Consider the basic scenario when you have 4 players and a sequence of cards with sections that contain $N = 4$ cards for each round of dealing one card to each player:
+
+\begin{center}
+
+$\lfloor - - - -\rfloor_1 \lfloor - - - -\rfloor_2 \lfloor - - - -\rfloor_3 .... \lfloor - - - -\rfloor_{20}$
+
+\end{center}
+
+This is a representation of how I see it in my head. Each time around, the dealer is giving four cards. Assume the dealer gives the first player he passes to a jester. This would mean that a revolution is only possible if the dealer passes out the second jester in the first slot at some other round of dealing $N$ cards. 
+
+Now if $N = 6$ then we will have a remainder sequence of $r = 2$ that looks like this:
+
+
+\begin{center}
+
+$$\lfloor - - - - - - \rfloor_1 \lfloor - - - - - - \rfloor_2 \lfloor - - - - - - \rfloor_3 .... \lfloor - - - - - - \rfloor_{13} \lfloor - - \rfloor_r $$
+
+\end{center}
+
+In the stacked dealing case, when $N = 4$ the dealer is giving 20 cards to each player at a time. Assume the dealer gives the first player he passes to a jester. This would mean that a revolution is only possible if the dealer passes out the second jester in the next slots that belong to that player. The visualization changes slightly. 
+
+
+
+\begin{center}
+
+$$\lfloor - - - ------------------\rfloor_1  .... \lfloor - - - -...----\rfloor_{4}$$
+
+\end{center}
+
+\subsection{R Simulation}
+Now for some computation, lets build a function that just depends on $N$ to see what the probabilities are for $3 \leq N \leq 40$ and also look at how fast it decreases. 
+
+
+```{r, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+
+
+seqRevolutionP <- function(N){
+  
+  numCards <- floor(80/N)
+  
+  
+  prob <- (N*numCards*(numCards - 1) + 2*numCards*(80 - N*numCards))/(80*79)
+  
+  
+  return(prob)
+}
+Num_Players <- c(3:40)
+Probability <- sapply(Num_Players, seqRevolutionP)
+
+plot(Num_Players, Probability, type = "h", main = "Sequential Dealing Probability", xlab = "# Players", ylab = "P(R = 1)", col = "blue")
+```
+
+
+```{r, echo = FALSE}
+
+Prob_round <- round(Probability, digits = 4)
+
+df <- data.frame(Num_Players[1:10], Prob_round[1:10])
+df[,3] <- data.frame(Num_Players[11:20])
+df[,4] <- data.frame(Prob_round[11:20])
+df[,5] <- data.frame(Num_Players[21:30])
+df[,6] <- data.frame(Prob_round[21:30])
+names(df) <- c("Players", "Rev Probability", "Players", "Rev Probability", "Players", "Rev Probability")
+
+g <- tableGrob(df, rows = NULL)
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = nrow(g), l = 1, r = ncol(g))
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 1, l = 1, r = ncol(g))
+grid.newpage()
+grid.draw(g)
+
+df2 <-  data.frame(Num_Players[31:38], Prob_round[31:38])
+names(df2) <- c("Players", "Rev Probability")
+g2 <- tableGrob(df2, rows = NULL)
+g2 <- gtable_add_grob(g2,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = nrow(g2), l = 1, r = ncol(g2))
+g2 <- gtable_add_grob(g2,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 1, l = 1, r = ncol(g2))
+grid.newpage()
+grid.draw(g2)
+
+
+
+
+```
+
+
+\section{\textbf{Stacked Dealing Formula}}
+
+Let there be $N$ players and 80 cards that are dealt as divisible by 80 and then the remainder will be passed out at the end. Also let $rc_k = 80 - k \lfloor80/N\rfloor$ (the number of remaining cards to pass out after passing out $k$ sets of cards). The Formula for the probability is calculated as follows:
+
+\begin{center}
+$$P(R = 1| N) = \frac{{N \choose 1}{2 \choose 2}{78 \choose \lfloor80/N\rfloor - 2}{rc_1 \choose \lfloor80/N\rfloor}{rc_2 \choose \lfloor80/N\rfloor}...{rc_{N-1} \choose \lfloor80/N\rfloor}r! + {r \choose 1}{2 \choose 1}{78 \choose \lfloor80/N\rfloor -1}{rc_1  \choose  \lfloor80/N\rfloor}...{rc_{N-1}  \choose \lfloor80/N\rfloor}{1 \choose 1}(r-1)!  }{{80 \choose \lfloor80/N\rfloor_1, \lfloor80/N\rfloor_2, ..., \lfloor80/N\rfloor_N, 1_1, ..., 1_r}}$$
+\end{center}
+
+Where ${80 \choose \lfloor80/N\rfloor_1, \lfloor80/N\rfloor_2, ..., \lfloor80/N\rfloor_N, 1_1, ..., 1_r} = \frac{80!}{\lfloor80/N\rfloor_1!\lfloor80/N\rfloor_2! ... \lfloor80/N\rfloor_N!1!^r}$ is the notation for the multinomial coefficient. The logic for this formula is similar to the 'Sequential Dealing' case. This is assuming that the first player will recieve $\lfloor 80/N \rfloor$ cards and the next player then recieves the same number until all the players have the same number of cards. Then the remaining cards are passed out sequentially starting with the first player who was passed to. This is a reasonable assumption because all the remaining cards wouldn't be given to the same player thus giving an advantage to whoever gets the $r$ remaining cards. It is also important to note that
+
+\begin{center}
+$${78 \choose \lfloor80/N\rfloor - 2}{rc_1 \choose \lfloor80/N\rfloor}{rc_2 \choose \lfloor80/N\rfloor}...{rc_{N-1} \choose \lfloor80/N\rfloor} = {78 \choose \lfloor80/N\rfloor}{rc_1 - 2 \choose \lfloor80/N\rfloor - 2}{rc_2 \choose \lfloor80/N\rfloor}...{rc_{N-1} \choose \lfloor80/N\rfloor} = ... $$
+
+$$=  {78 \choose \lfloor80/N\rfloor}{rc_1 - 2 \choose \lfloor80/N\rfloor}{rc_2 - 2 \choose \lfloor80/N\rfloor}...{rc_{N-1} - 2 \choose \lfloor80/N\rfloor - 2}$$
+\end{center}
+
+The number of ways to give two cards to one of N individuals is the same no matter which player is being treated as the player that gets the cards in the formula. Thus having $N$ in front accounts for all the ways this can happen. In order to simplify the code required to display the results, it is necessary to simplify this formula. First lets consider the case when $N = 4,5$ to use this as a base case and then abstract this for any $N$ players for $3 \leq N \leq 40$. In this case the dealer is handing out $\lfloor80/N\rfloor$ at a time. So we need to count the number of groupings that result in jesters.
+
+When $N = 4$, we have that $\lfloor 80/N \rfloor = \lfloor 80/4 \rfloor = 20$ and $r = 0$. The formula above results in the following:
+
+\noindent\rule{16cm}{0.4pt}
+\begin{flushleft}
+
+{\large $P(R = 1 | 4) = \frac{4 {78 \choose 20 - 2}{80 - 20 \choose 20}{80 - 40 \choose 20}{80 - 60 \choose 20}}{{80 \choose 20, 20, 20, 20}}$} 
+\\ \vspace{0.5in}
+{\large $= \frac{4 (\frac{78!}{18!(78-18)!})(\frac{60!}{20!(40)!})(\frac{40!}{20!(20)!})(\frac{20!}{20!(0)!})}{(\frac{80!}{20!20!20!20!})} = 4 (\frac{78!}{18!(60)!})(\frac{60!}{20!(40)!})(\frac{40!}{20!(20)!})(\frac{20!20!20!20!}{80!})$}
+\\ \vspace{0.5in}
+{\large $= 4(\frac{78!20!}{18!80!}) = 4(\frac{20*19}{80*79}) = \frac{1520}{6320} = 0.24050$}
+
+\end{flushleft}
+\noindent\rule{16cm}{0.4pt}
+
+When $N = 5$, we have that $\lfloor 80/N \rfloor = \lfloor 80/5 \rfloor = 16$ and $r = 0$. The formula above results in the following:
+
+\noindent\rule{16cm}{0.5pt}
+\begin{flushleft}
+{\large $P(R = 1 | 5) = \frac{5 {78 \choose 16 - 2}{80 - 16 \choose 16}{80 - 32 \choose 16}{80 - 48 \choose 16}{80 - 64 \choose 16}}{{80 \choose 16, 16, 16, 16, 16}}$}
+\\ \vspace{0.5in}
+{\large $= \frac{5 (\frac{78!}{14!(64)!})(\frac{64!}{16!(48)!})(\frac{48!}{16!(32)!})(\frac{32!}{16!(16)!})(\frac{16!}{16!})}{(\frac{80!}{16!16!16!16!16!})} = 5 (\frac{78!}{14!(64)!})(\frac{64!}{16!(48)!})(\frac{48!}{16!(32)!})(\frac{32!}{16!(16)!})(\frac{16!16!16!16!16!}{80!})$}
+\\ \vspace{0.5in}
+{\large $= 5(\frac{78!16!}{14!80!}) = 5(\frac{16*15}{80*79}) = \frac{1200}{6320} = 0.1898$}
+\end{flushleft}
+\noindent\rule{16cm}{0.4pt}
+
+When $N = 6$, we have that $\lfloor 80/N \rfloor = \lfloor 80/6 \rfloor = 13$ and $r = 2$. The formula above results in the following:
+
+\noindent\rule{16cm}{0.5pt}
+\begin{flushleft}
+{\large $P(R=1| 6) = \frac{6 {78 \choose 13 - 2}{80 - 13 \choose 13}{80 - 26 \choose 13}{80 - 39 \choose 13}{80 - 52 \choose 13}{80 - 65 \choose 13}2! + {2 \choose 1}{2 \choose 1}{78 \choose 12}{80-26-1  \choose  13}...{80-65-1 \choose 13}(1)! }{{80 \choose 13, 13, 13, 13, 13, 1, 1}}$}
+\\ \vspace{0.5in}
+{\large $= \frac{6 (\frac{78!}{11!(67)!})(\frac{67!}{13!(54)!})(\frac{54!}{13!(41)!})(\frac{41!}{13!(28)!})(\frac{28!}{13!(15)!})(\frac{15!}{13!(2)!})(2!)+ 4 (\frac{78!}{12!(66)!})(\frac{66!}{13!(53)!})(\frac{53!}{13!(40)!})(\frac{40!}{13!(27)!})(\frac{27!}{13!(14)!})(\frac{14!}{13!(1)!})}{(\frac{80!}{13!13!13!13!13!1!1!})}$
+\\ \vspace{0.5in}
+$= (6 (\frac{78!}{11!(67)!})(\frac{67!}{13!(54)!})(\frac{54!}{13!(41)!})(\frac{41!}{13!(28)!})(\frac{28!}{13!(15)!})(\frac{15!}{13!})+ 4 \frac{78!}{12!(13!)^5})(\frac{(13!)^6}{80!})$}
+\\ \vspace{0.5in}
+{\large $= (6(\frac{78!}{11!(13!)^5}) + 4 \frac{78!}{12!(13!)^5})(\frac{(13!)^6}{80!}) = 6(\frac{(13)(12)}{(80)(79)})+ 4(\frac{(13)}{(80)(79)}) = \frac{936}{6320} + \frac{52}{6320} = 0.15633$}
+\end{flushleft}
+\noindent\rule{16cm}{0.4pt}
+
+\subsection{Formula Simplification}
+
+Now we can further generalize and check that these cases are valid. Note that we have had some nice cancellations in the above formula, we will use those to find the simplified formula. First lets rewrite the general formula to separate the remainder/no remainder cases in the numerator:
+
+\begin{center}
+$$ P(R=1 | N) = \frac{{N \choose 1}{2 \choose 2}{78 \choose \lfloor80/N\rfloor - 2}{rc_1 \choose \lfloor80/N\rfloor}{rc_2 \choose \lfloor80/N\rfloor}...{rc_{N-1}  \choose \lfloor80/N\rfloor}r!  }{{80 \choose \lfloor80/N\rfloor_1, \lfloor80/N\rfloor_2, ..., \lfloor80/N\rfloor_N, 1_1, ..., 1_r}} + \frac{{r \choose 1}{2 \choose 1}{78 \choose \lfloor80/N\rfloor -1}{rc_1-1 \choose  \lfloor80/N\rfloor}...{rc_{N-1}-1 \choose \lfloor80/N\rfloor}{1 \choose 1}(r-1)! }{{80 \choose \lfloor80/N\rfloor_1, \lfloor80/N\rfloor_2, ..., \lfloor80/N\rfloor_N, , 1_1, ..., 1_r}}  $$
+\end{center}
+
+Note that the right hand side of this formula is only defined if $r > 0$ because ${0 \choose 1} = 0$ and $(-1)!$ is not finite. Thus we will only have the second part of this equation if there is a number of players that does not divide 80. 
+
+\noindent\rule{16cm}{0.4pt}
+
+Simplify numerator on the left hand side:
+
+\begin{flushleft}
+
+{\large $ {N \choose 1}{2 \choose 2}{78 \choose \lfloor80/N\rfloor - 2}{rc_1 \choose \lfloor80/N\rfloor}{rc_2 \choose \lfloor80/N\rfloor}...{rc_{N-1} \choose \lfloor80/N\rfloor}r! = $}
+\\ \vspace{0.5in}
+{\large $N \frac{78!}{(\lfloor80/N\rfloor - 2)!(78 - (\lfloor80/N\rfloor - 2))}\frac{(rc_1)!}{(\lfloor80/N\rfloor)!(rc_2)!}\frac{(rc_2)!}{(\lfloor80/N\rfloor)!(rc_3)!}...\frac{(rc_{N-1})!r!}{(\lfloor80/N\rfloor)!(80 - (N-1)\lfloor80/N\rfloor - \lfloor80/N\rfloor)!}$}
+\\ \vspace{0.5in}
+{\large $ = N \frac{78!r!}{(\lfloor80/N\rfloor - 2)!(\lfloor80/N\rfloor)!...(\lfloor80/N\rfloor_{N-1})!(80 - N\lfloor80/N\rfloor + \lfloor80/N\rfloor - \lfloor80/N\rfloor)!}$}
+\\ \vspace{0.5in}
+{\large$ = N \frac{78!r!}{(\lfloor80/N\rfloor - 2)!(\lfloor80/N\rfloor)!...(\lfloor80/N\rfloor_{N-1})!(r)!} = = N \frac{78!}{(\lfloor80/N\rfloor - 2)!(\lfloor80/N\rfloor)!...(\lfloor80/N\rfloor_{N-1})!}$ }
+\end{flushleft}
+
+
+\begin{flushleft}
+Now plug this back into original formula to get that the complete left hand side is given by:
+\\ \vspace{0.5in}
+{\large $ \frac{ N \frac{78!}{(\lfloor80/N\rfloor - 2)!(\lfloor80/N\rfloor)!...(\lfloor80/N\rfloor_{N-1})!}}{{80 \choose \lfloor80/N\rfloor_1, \lfloor80/N\rfloor_2, ..., \lfloor80/N\rfloor_N, 1_1, ..., 1_r}} = N \frac{78!}{(\lfloor80/N\rfloor - 2)!(\lfloor80/N\rfloor)!...(\lfloor80/N\rfloor_{N-1})!} \frac{(\lfloor80/N\rfloor)!...(\lfloor80/N\rfloor_{N})!}{80!}$}
+\\ \vspace{0.5in}
+{\large $= \frac{N(78!)(\lfloor80/N\rfloor)!}{(\lfloor80/N\rfloor - 2)!(80!)} = \frac{N(\lfloor80/N\rfloor)(\lfloor80/N\rfloor - 1)}{(80)(79)} $}
+\end{flushleft}
+
+\noindent\rule{16cm}{0.4pt}
+
+Simplify numerator on the right hand side, assuming $r > 0$:
+
+\begin{flushleft}
+
+{\large $ {r \choose 1}{2 \choose 1}{78 \choose \lfloor80/N\rfloor - 1}{80 - \lfloor80/N\rfloor-1 \choose \lfloor80/N\rfloor}{80 - 2\lfloor80/N\rfloor-1 \choose \lfloor80/N\rfloor}...{80 - (N-1)\lfloor80/N\rfloor-1 \choose \lfloor80/N\rfloor}{1 \choose 1}(r-1)! $}
+\\ \vspace{0.5in}
+$= 2r(r-1)! \frac{78!}{(\lfloor80/N\rfloor - 1)!(78 - (\lfloor80/N\rfloor - 1))!}\frac{(rc_1-1)!}{(\lfloor80/N\rfloor)!(rc_2-1)!}\frac{(rc_2-1)!}{(\lfloor80/N\rfloor)!(rc_3-1)!}...\frac{(rc_{N-1}-1)!}{(\lfloor80/N\rfloor)!(80 - (N-1)\lfloor80/N\rfloor - \lfloor80/N\rfloor-1)!}$
+\\ \vspace{0.5in}
+$ = 2r(r-1)! \frac{78!(rc_1-1)!}{(\lfloor80/N\rfloor - 1)!(rc_1 -1)!(\lfloor80/N\rfloor)!...(\lfloor80/N\rfloor_{N-1})!(r-1)!} = \frac{2r(78!)}{(\lfloor80/N\rfloor - 1)!(\lfloor80/N\rfloor)!...(\lfloor80/N\rfloor_{N-1})!} $
+\\ \vspace{0.5in}
+
+Now plug this back into original formula to get that the complete right hand side is given by:
+
+$ \frac{ \frac{2r(78!)}{(\lfloor80/N\rfloor - 1)!(\lfloor80/N\rfloor)!...(\lfloor80/N\rfloor_{N-1})!} }{{80 \choose \lfloor80/N\rfloor_1, \lfloor80/N\rfloor_2, ..., \lfloor80/N\rfloor_N, 1_1,...,1_r}} = 2r \frac{78!}{(\lfloor80/N\rfloor - 1)!(\lfloor80/N\rfloor)!...(\lfloor80/N\rfloor_{N-1})!} \frac{(\lfloor80/N\rfloor)!...(\lfloor80/N\rfloor_{N})!}{80!} $
+\\ \vspace{0.5in}
+{\large $= \frac{2r(78!)( \lfloor80/N\rfloor)!}{(\lfloor80/N\rfloor - 1)!(80!)} = \frac{2r(\lfloor80/N\rfloor)}{80(79)} $}
+\end{flushleft}
+
+\noindent\rule{16cm}{0.4pt}
+
+Finally we have our formula for the probability of a revolution when the cards are dealt in stacks to each player in order. Note that this has greatly simplified the computation. We also see that we have the same formula as the sequential dealing case. 
+
+
+\begin{center}
+
+{\large $P(R = 1| N) = \frac{N(\lfloor80/N\rfloor)(\lfloor80/N\rfloor - 1)}{(80)(79)}   +  \frac{2r(\lfloor80/N\rfloor)}{(80)(79)}$} \vspace{0.2in}
+
+
+\end{center}
+
+
+\subsection{R Simulation}
+
+
+```{r, tidy=TRUE, tidy.opts=list(width.cutoff=50)}
+#Revolution Probability Calculator for a given number of players, N 
+stackRevolutionP <- function(N){
+  
+  #number of cards dealt to each player
+  numCards <- floor(80/N)
+  
+  #calculate the remainder
+  r <- 80- N*numCards
+  
+  #left hand side numerator
+  numerator_lhs <- N*numCards*(numCards-1)
+  
+  #left had side denominator
+  denominator_lhs <- 80*79
+  
+
+  #if there is a remainder, calculate the right hand side 
+  if(r != 0){
+     numerator_rhs <-2*(r)*numCards
+     denominator_rhs <- 80*79
+  }
+  else{
+    numerator_rhs <- 0
+    denominator_rhs <- 1
+  }
+  
+  return(numerator_lhs/denominator_lhs + numerator_rhs/denominator_rhs)
+  
+}
+
+players <- c(3:40)
+resultStack <- sapply(players, stackRevolutionP)
+
+plot(players, resultStack, type = "h", main = "Stacked Dealing Probability", xlab = "# Players", ylab = "P(R = 1)", col = "blue")
+
+```
+
+
+```{r, echo = FALSE}
+
+Prob_round <- round(resultStack, digits = 4)
+
+df <- data.frame(players[1:10], Prob_round[1:10])
+df[,3] <- data.frame(players[11:20])
+df[,4] <- data.frame(Prob_round[11:20])
+df[,5] <- data.frame(players[21:30])
+df[,6] <- data.frame(Prob_round[21:30])
+names(df) <- c("Players", "Rev Probability", "Players", "Rev Probability", "Players", "Rev Probability")
+library(gtable)
+g <- tableGrob(df, rows = NULL)
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = nrow(g), l = 1, r = ncol(g))
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 1, l = 1, r = ncol(g))
+grid.newpage()
+grid.draw(g)
+
+df2 <-  data.frame(players[31:38], Prob_round[31:38])
+names(df2) <- c("Players", "Rev Probability")
+g2 <- tableGrob(df2, rows = NULL)
+g2 <- gtable_add_grob(g2,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = nrow(g2), l = 1, r = ncol(g2))
+g2 <- gtable_add_grob(g2,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 1, l = 1, r = ncol(g2))
+grid.newpage()
+grid.draw(g2)
+
+```
+
+\section{\textbf{Finding the decay rate per player}}
+
+From the graphs and tables above, both of these scenarios resemble some sort of exponential decay. An exponential decay pattern can be represented by the following formula:
+
+\begin{center}
+
+
+$N_t = N_0 e^{-\lambda t}$
+
+
+
+\end{center}
+
+\begin{flushleft}
+$N_t = $ the amount at time or period (t) \newline
+
+$N_0 = $ the amount at time $t = 0$ (the initial amount) \newline
+
+$\lambda =$ the rate of decay \newline
+
+$t = $ time or period \newline
+
+\end{flushleft}
+
+
+
+
+We need to solve for the rate of decay, taking the natural log of both sides gives
+
+\begin{center}
+
+{\large $\frac{N_0}{N_t} = e^{-\lambda t}$}
+\\ \vspace{0.15in}
+{\large $ln(\frac{N_0}{N_t}) = -\lambda t$}
+\\ \vspace{0.15in}
+{\large $\lambda = -\frac{ln(\frac{N_0}{N_t})}{t}$}
+\vspace{0.15in}
+
+\end{center}
+To find the decay rate per player for the two examples we are going to treat the 38 different player configurations as time periods. 
+
+\textbf{\textit{Sequential and Stacked Dealing}}
+
+$t = 38, N_{38} = 0.0127, N_0 = 0.325$ \newline 
+
+Rate of Decay = $-\frac{ln(\frac{N_0}{N_t})}{t} = -\frac{log(\frac{0.325}{0.0127})}{38} = 0.0247$
+
+\noindent\rule{16cm}{0.4pt}
+
+These numbers give a rough idea of the marginal cost in probability of adding an additional player to the game. In the both dealing scenarios, we see that the probability of a revolution decreases by about 2.5% when a new player joins the game. 
+
+
+\section{\textbf{Generalization of Formulas}}
+
+When you take a step back, and try to see what these formulas mean, it is simple to apply this result to a more general setting. These formulas are giving the probability that when 80 objects are passed out to $N$ individuals, one individual gets 2 unique items from the set of 80. When we take out the numbers, this is the probability that when $M$ objects are passed out to $N$ individuals, one individual gets $k$ unique items from the set of $M$. This is a scenario that I call 'One Player Takes All', or one player ends up with all 'special' items. 
+
+Assume $1 \leq N < M < \infty$ and that $2 \leq k \leq \lceil M/N \rceil$ which translates to $2 \leq k \leq \lfloor M/N \rfloor$ if $r =0$ and $2 \leq k \leq \lfloor M/N \rfloor + 1$ if $r \neq 0$, let $rc_{M,j} = M - j\lfloor M/N \rfloor$ and recall that $r = M - N \lfloor M/N \rfloor$. We assume that $k \geq 2$ because the problem is checking if one of the $N$ players receives all $k$ items. If $k=1$, then the probability that a player recieves all the 'marked' items of interest should be $1$ because if all the objects are passed out one player will recieve all the 'marked' items. 
+
+\subsection{\textbf{\textit{Sequential Dealing}}}
+
+
+\begin{flushleft}
+Given $M, N, k$ we have:\\
+
+$$ P(R = 1) = \frac{{\binom{N}{1}}{\lfloor M/N\rfloor \choose k}k!(M - k)! + {\lfloor M/N\rfloor \choose k-1}{M - N\lfloor M/N\rfloor  \choose 1}k!{1 \choose 1}(M - k)!}{M!} $$
+$$ = \frac{N \frac{(\lfloor M/N\rfloor)!(k)!(M-k)!}{k!(\lfloor M/N\rfloor - k)!} + rk!\frac{(\lfloor M/N\rfloor)!(M-k)!}{(k-1)!(\lfloor M/N\rfloor - k + 1)!}}{M!} $$
+$$ = (M-k)! \frac{N\prod_{i = 0}^{k-1}(\lfloor M/N\rfloor - i) + \frac{rk(\lfloor M/N\rfloor)!}{(\lfloor M/N\rfloor - k + 1)!}}{M!}$$
+$$ = \frac{N\prod_{i = 0}^{k-1}(\lfloor M/N\rfloor - i)+ rk\prod_{i = 0}^{k-2}(\lfloor M/N\rfloor - i)}{ \prod_{i = 0}^{k - 1} (M-i)}$$
+
+\end{flushleft}
+
+To further verfy that this formula is correct, $P(R=1)$ should be 1 if $N = 1$ for any $k$ and if $k=1$ for any $N,M$ that satisfy the above inequalities. \newline
+Let $k=1$
+$$ P(R = 1) = \frac{N\prod_{i = 0}^{0}(\lfloor M/N\rfloor - i)+ r}{(1-1)! \prod_{i = 0}^{0} (M-i)} = \frac{N(\lfloor M/N\rfloor)+ r}{M} = \frac{M - r+ r}{M} = \frac{M}{M}=1$$
+Let $N=1$ and note that $r=0$
+$$ P(R = 1) = \frac{\prod_{i = 0}^{k-1}(\lfloor M\rfloor - i)+ (0)k\prod_{i = 0}^{k-2}(\lfloor M\rfloor - i)}{ \prod_{i = 0}^{k - 1} (M-i)} = 1$$
+\noindent\rule{16cm}{0.4pt}
+
+\subsection{\textbf{\textit{Stacked Dealing}}}
+
+
+
+\begin{flushleft}
+
+Given $M, N, k$ we have: \\
+
+$$ P(R = 1) = \frac{{N \choose 1}{k \choose k}{M - k \choose \lfloor M/N\rfloor - k}{rc_{M,1} \choose \lfloor M/N\rfloor}{rc_{M,2} \choose \lfloor M/N\rfloor}...{rc_{N-1}  \choose \lfloor M/N\rfloor}r!  }{{M \choose \lfloor M/N\rfloor_1, \lfloor M/N\rfloor_2, ..., \lfloor M/N\rfloor_N, 1_1, ..., 1_r}} + \frac{{r \choose 1}{k \choose k-1}{M - k \choose \lfloor M/N\rfloor -(k-1)}{rc_1 -1 \choose  \lfloor M/N\rfloor}...{rc_{N-1} -1 \choose \lfloor M/N\rfloor}{1 \choose 1}(r-1)! }{{80 \choose \lfloor M/N\rfloor_1, \lfloor M/N\rfloor_2, ..., \lfloor M/N\rfloor_N, , 1_1, ..., 1_r}}  $$
+\end{flushleft}
+
+
+
+First lets analyze the numerator left hand side:
+
+\begin{flushleft}
+
+{\large $ {N \choose 1}{k \choose k}{M - k \choose \lfloor M/N\rfloor - k}{rc_{M,1} \choose \lfloor M/N\rfloor}{rc_{M,2} \choose \lfloor M/N\rfloor}...{rc_{M,N-1} \choose \lfloor M/N\rfloor}r! = $}
+\\ \vspace{0.5in}
+{\large $N \frac{(M-k)!}{(\lfloor M/N\rfloor - k)!(M - k - (\lfloor M/N\rfloor - k))}\frac{(rc_{M,1})!}{(\lfloor M/N\rfloor)!(rc_{M,2})!}\frac{(rc_{M,2})!}{(\lfloor M/N\rfloor)!(rc_{M,3})!}...\frac{(rc_{M, N-1})!r!}{(\lfloor M/N\rfloor)!(M - (N-1)\lfloor M/N\rfloor - \lfloor M/N\rfloor)!}$}
+\\ \vspace{0.5in}
+{\large $ = \frac{ N(M-k)!r!}{(\lfloor M/N\rfloor - k)!(\lfloor M/N\rfloor)!...(\lfloor M/N\rfloor_{N-1})!(M - N\lfloor M/N\rfloor + \lfloor M/N\rfloor - \lfloor M/N\rfloor)!}$}
+\\ \vspace{0.5in}
+{\large$ =  \frac{N(M-k)!r!}{(\lfloor M/N\rfloor - k)!(\lfloor M/N\rfloor)!...(\lfloor M/N\rfloor_{N-1})!(r)!} =  \frac{N(M-k)!}{(\lfloor M/N\rfloor - k)!(\lfloor M/N\rfloor)!...(\lfloor M/N\rfloor_{N-1})!}$ }\\
+\vspace{0.1in}
+
+\end{flushleft}
+
+
+\begin{flushleft}
+Now plug this back into original formula to get that the complete left hand side is given by:
+\\ \vspace{0.5in}
+{\large $ \frac{\frac{N(M-k)!}{(\lfloor M/N\rfloor - k)!(\lfloor M/N\rfloor)!...(\lfloor M/N\rfloor_{N-1})!}}{{M \choose \lfloor M/N\rfloor_1, \lfloor M/N\rfloor_2, ..., \lfloor M/N\rfloor_N, 1_1, ..., 1_r}} =  \frac{N(M-k)!}{(\lfloor M/N\rfloor - k)!(\lfloor M/N\rfloor)!...(\lfloor M/N\rfloor_{N-1})!} \frac{(\lfloor M/N\rfloor)!...(\lfloor M/N\rfloor_{N})!}{M!}$}
+\\ \vspace{0.5in}
+ $$= \frac{N(M - k)!(\lfloor M/N\rfloor)!}{(\lfloor M/N\rfloor - k)!(M!)} = \frac{N \displaystyle \prod_{j=0}^{k-1}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{k-1} (M - i)} $$
+\end{flushleft}
+
+
+Now lets simplify the right hand side of the original formula:
+
+\begin{flushleft}
+
+{\large $ {r \choose 1}{k \choose k-1}{M - k \choose \lfloor M/N\rfloor - (k - 1)}{rc_{M,1}-1 \choose \lfloor M/N\rfloor}{rc_{M,2}-1 \choose \lfloor M/N\rfloor}...{rc_{M,N-1}-1 \choose \lfloor M/N\rfloor}(r-1)! = $}
+\\ \vspace{0.5in}
+{\large $ \frac{rk(M-k)!}{(\lfloor M/N\rfloor - k +1)!(M - k  - (\lfloor M/N\rfloor - k+1))!}\frac{(rc_{M,1}-1)!}{(\lfloor M/N\rfloor)!(rc_{M,2}-1)!}\frac{(rc_{M,2}-1)!}{(\lfloor M/N\rfloor)!(rc_{M,3}-1)!}...\frac{(rc_{M, N-1}-1)!(r-1)!}{(\lfloor M/N\rfloor)!(M - (N-1)\lfloor M/N\rfloor - 1 - \lfloor M/N\rfloor)!}$}
+\\ \vspace{0.5in}
+{\large $ = \frac{ rk(M-k)!(rc_{M,1}-1)!(r-1)!}{(\lfloor M/N\rfloor - k+1)!(M-\lfloor M/N\rfloor-1)!(\lfloor M/N\rfloor)!^{N-1}(M - N\lfloor M/N\rfloor -1 + \lfloor M/N\rfloor - \lfloor M/N\rfloor )!}$}
+\\ \vspace{0.5in}
+{\large$ =  \frac{k(M-k)!(rc_{M,1}-1)!r!}{(\lfloor M/N\rfloor - k+1)!(rc_{M,1}-1)!(\lfloor M/N\rfloor)!^{N-1}(r-1)!} =  \frac{k(M-k)!(r)}{(\lfloor M/N\rfloor - (k-1))!(\lfloor M/N\rfloor)!^{N-1}}$ }
+\end{flushleft}
+
+
+
+\begin{flushleft}
+Now plug this back into original formula to get that the complete right hand side is given by:
+\\ \vspace{0.5in}
+{\large $ \frac{\frac{k(M-k)!(r)}{(\lfloor M/N\rfloor - k + 1)!(\lfloor M/N\rfloor)!^{N-1}}}{{M \choose \lfloor M/N\rfloor_1, \lfloor M/N\rfloor_2, ..., \lfloor M/N\rfloor_N, 1_1, ..., 1_r}} =  \frac{k(M-k)!(r)}{(\lfloor M/N\rfloor - k+1)!(\lfloor M/N\rfloor)!^{N-1}} \frac{(\lfloor M/N\rfloor)!^N}{M!}$}
+\\ \vspace{0.5in}
+{\large $= \frac{k(M - k)!(r)(\lfloor M/N\rfloor)!}{(\lfloor M/N\rfloor - k+1)!M!} = \frac{k(r) \displaystyle \prod_{j=0}^{k-2}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{k-1} (M - i)} $}
+
+\end{flushleft}
+
+
+\subsection{General Formula}
+
+Finally we have the general formula: Note that this is the formula for both stacked and sequential dealing. For $1 \leq N < M < \infty$, $2 \leq k \leq \lceil M/N \rceil$, and  $r = M - N \lfloor M/N \rfloor$:
+
+\noindent\rule{16cm}{0.4pt}
+
+\begin{flushleft}
+
+$$P(R = 1| M,N,k) = \frac{(N) \displaystyle \prod_{j=0}^{k-1}(\lfloor M/N\rfloor - j)   + (k)(r) \displaystyle \prod_{j=0}^{k-2}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{k-1} (M - i)} $$
+
+
+\end{flushleft}
+
+\noindent\rule{16cm}{0.4pt}
+
+
+\section{\textbf{Theorems}}
+
+\begin{theorem}\label{1}
+Let $P_{\mbox{Stacked}}(R = 1| M,N,k)$ be the probability of a revolution for stacked dealing and let $P_{\mbox{Sequential}}(R = 1| M,N,k)$ be the same for sequential dealing. For $1 \leq N < M < \infty$, $2 \leq k \leq \lceil M/N \rceil$, and  $r = M - N \lfloor M/N \rfloor$,
+
+$$P_{\mbox{Stacked}}(R = 1| M,N,k) = P_{\mbox{Sequential}}(R = 1| M,N,k) = P(R = 1| M,N,k) $$
+\end{theorem}
+
+
+
+
+\begin{theorem}\label{2} For $1 \leq N < M < \infty$, $2 \leq k \leq \lceil M/N \rceil$, and  $r = M - N \lfloor M/N \rfloor$,
+
+$$0 \leq P(R = 1| M,N,k) \leq 1 $$
+\end{theorem}
+
+We already arrived at the proof of Theorem \ref{1} based on simulation and analysis in the previous sections. So all that is left is to prove Theorem \ref{2}.
+\begin{proof}
+First lets assume that $r = 0$ and so we have that 
+
+\begin{center}
+
+$P(R = 1 | N, M, k) = \frac{N \displaystyle \prod_{j=0}^{k-1}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{k-1} (M - i)}$
+
+\end{center}
+
+First check the case when $N = 1$, if we have one player, with probability one they should recieve all the objects of interest. 
+
+\begin{flushleft}
+$P(R = 1 | 1, M, k) = \frac{ \displaystyle \prod_{j=0}^{k-1}(\lfloor M\rfloor - j)}{\displaystyle \prod_{i=0}^{k-1} (M - i)} = \frac{ \displaystyle \prod_{j=0}^{k-1}(M - j)}{\displaystyle \prod_{i=0}^{k-1} (M - i)} = 1$
+
+\end{flushleft}
+
+For any $k$ with $1 \leq k < \infty$. \newline 
+\noindent\rule{16cm}{0.4pt}
+Now check the special case when $k = 1$: Let $r = 0$ and we are going to assume that if $k =1$, $\prod_{j=0}^{k-2}(\lfloor M/N\rfloor - j) = 1$
+\\
+
+$$P(R = 1 | N, M, 1) = \frac{N \displaystyle \prod_{j=0}^{0}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{0} (M - i)} =  \frac{N (\lfloor M/N\rfloor)}{M} = \frac{N \displaystyle( M/N)}{M} = \frac{M}{M} = 1 $$
+
+Now let $r \neq 0$: 
+
+
+$$ P(R = 1 | N, M, 1) = \frac{N \displaystyle \prod_{j=0}^{0}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{0} (M - i)}   +  \frac{(1)(r) \displaystyle }{\displaystyle \prod_{i=0}^{0} (M - i)} =  \frac{N (\lfloor M/N\rfloor) + r}{M} = \frac{M-r + r}{M} = \frac{M}{M} = 1$$
+
+\end{proof}
+
+
+\noindent\rule{16cm}{0.4pt}
+
+\subsection{Proofs of upper bounds}
+For the next step recall that $r = M - N\lfloor M/N \rfloor \to N = \frac{M-r}{\lfloor M/N \rfloor}$. We need to prove that $P(R = 1| N, M, k) = \frac{ \displaystyle \prod_{j=0}^{k-1}(\lfloor M\rfloor - j)}{\displaystyle \prod_{i=0}^{k-1} (M - i)} \leq 1$ for $1 < N < M$. 
+\begin{proof}
+
+\begin{flushleft}
+
+$$\frac{ N\displaystyle \prod_{j=0}^{k-1}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{k-1} (M - i)} \leq 1 \to \frac{\displaystyle \prod_{j=0}^{k-1}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{k-1} (M - i)} \leq \frac{1}{N}$$
+\\ \vspace{0.2in}
+$$\to \frac{\displaystyle \prod_{j=0}^{k-1}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{k-1} (M - i)} \leq \frac{1}{(M-r)/\lfloor M/N\rfloor} = \frac{\lfloor M/N\rfloor}{M-r}$$
+
+\end{flushleft}
+
+
+
+To prove this inequality we will use induction on $k$ to derive the result. First let $k = 2$:
+
+\begin{center}
+
+$$\frac{\displaystyle \prod_{j=0}^{2-1}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{2-1} (M - i)} \leq \frac{\lfloor M/N\rfloor}{M-r} \to \frac{(\lfloor M/N\rfloor)(\lfloor M/N\rfloor - 1)}{ (M)(M-1)} \leq \frac{\lfloor M/N\rfloor}{M-r}$$ \vspace{0.1in}
+
+\end{center}
+
+It is clear that $\frac{(\lfloor M/N\rfloor)}{ (M)} \leq \frac{\lfloor M/N\rfloor}{M-r} \to \frac{(\lfloor M/N\rfloor - 1)}{(M-1)} \leq \frac{\lfloor M/N\rfloor}{M-r}$. Since they both have the same upper bound and both sides are always less than or equal to one, this implies that $\frac{(\lfloor M/N\rfloor)(\lfloor M/N\rfloor - 1)}{ (M)(M-1)} \leq \frac{\lfloor M/N\rfloor}{M-r}$. Thus our base case is satisfied. 
+
+Now let $k = n+1$:
+\begin{flushleft}
+$$\frac{\displaystyle \prod_{j=0}^{n+1-1}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{n+1-1} (M - i)} \leq \frac{\lfloor M/N \rfloor}{M-r}$$
+\\ \vspace{0.3in}
+$$\frac{(\lfloor M/N\rfloor)(\lfloor M/N\rfloor - 1)...(\lfloor M/N\rfloor - n)}{(M)(M-1)...(M-n)} \leq \frac{\lfloor M/N \rfloor}{M-r}$$
+\\ \vspace{0.3in}
+We already know that $\frac{(\lfloor M/N\rfloor)(\lfloor M/N\rfloor - 1)}{ (M)(M-1)} \leq \frac{\lfloor M/N\rfloor}{M-r}$ by the base case, so then it must be the case that \\
+\vspace{0.3in}
+$\frac{(\lfloor M/N\rfloor)(\lfloor M/N\rfloor - 1)(\lfloor M/N\rfloor - 2)}{ (M)(M-1)(M-2)} \leq \frac{\lfloor M/N\rfloor}{M-r} \to \frac{(\lfloor M/N\rfloor)(\lfloor M/N\rfloor - 1)(\lfloor M/N\rfloor - 2)...(\lfloor M/N\rfloor - n)}{ (M)(M-1)(M-2)...(M-n)} \leq \frac{\lfloor M/N\rfloor}{M-r}$
+
+\end{flushleft}
+
+
+Which gives us that $0 \leq P(R = 1 | N, M, k) \leq 1$ when $r = 0$. 
+\end{proof}
+
+\noindent\rule{16cm}{0.4pt}
+
+Now prove the case when $r \neq0$: Let $k =2$.
+
+\begin{proof} 
+
+
+For this proof we need the following inequality:$r \neq 0 \to \lfloor M/N \rfloor < M/N$ 
+\\ \vspace{0.5in}
+$$P(R = 1 | N, M, 2) =  \frac{N \displaystyle \prod_{j=0}^{2-1}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{2-1} (M - i)}   +  \frac{2(r) \displaystyle \prod_{j=0}^{2-2}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{2-1} (M - i)}$$
+\\ \vspace{0.2in}
+$= \frac{N(\lfloor M/N \rfloor)(\lfloor M/N \rfloor -1) + 2(r)(\lfloor M/N \rfloor)}{M(M-1)}$
+\\
+$ = \frac{N(\lfloor M/N \rfloor)^2 - N(\lfloor M/N \rfloor) + 2r(\lfloor M/N \rfloor)}{M(M-1)}$
+\\
+
+Recall that we have the relation $r = M - N(\lfloor M/N \rfloor) \to N(\lfloor M/N \rfloor) = M -r$
+\\
+$ = \frac{-N(\lfloor M/N \rfloor)^2 - N(\lfloor M/N \rfloor) + 2M(\lfloor M/N \rfloor) }{M(M-1)}$
+\\
+$  = \frac{(2M - N)(\lfloor M/N \rfloor) -N(\lfloor M/N \rfloor)^2}{M(M-1)}$
+
+Now add the inequality to see if it holds
+
+$ = \frac{(2M - N)(\lfloor M/N \rfloor)-N(\lfloor M/N \rfloor)^2}{M(M-1)} < 1 \iff (2M - N)(\lfloor M/N \rfloor) -N(\lfloor M/N \rfloor)^2 < M(M-1)$\\ \vspace{0.1in}
+
+Use $\lfloor M/N \rfloor = \frac{M-r}{N}$\\
+
+$ \iff (2M -N)(\frac{M-r}{N}) - N(\frac{(M-r)^2}{N^2}) < M(M-1) \iff (2M -N)(\frac{M-r}{N}) - \frac{(M-r)^2}{N}   < M(M-1)$\\
+
+$\iff \frac{(2M - N)(M-r) - (M^2 - 2Mr + r^2)}{N} < M(M-1) $\\
+
+$\iff \frac{2M^2 - 2Mr - NM + Nr - M^2 + 2Mr - r^2}{N} = \frac{M^2 - NM + Nr - r^2}{N} < M(M-1) $\\
+
+$\iff \frac{M^2}{N} - M +r - \frac{r^2}{N} < M(M-1) $\\
+
+$\iff \frac{M^2-r^2}{N} < M(M-1) + M - r = M^2 - r $\\
+
+Clearly $ M^2-r^2 < M^2 - r$, so we have immediately that  $\frac{M^2-r^2}{N} <  M^2 - r $\\
+\end{proof}
+
+\noindent\rule{16cm}{0.4pt}
+
+Now assume that this is true for $k = 2,3,4,...,n$ and we need to prove the case when $k = n + 1$.
+
+\begin{proof}
+
+Recall $r \neq 0 \to \lfloor M/N \rfloor < M/N$ \\
+
+By induction we know that 
+
+\begin{center}
+
+$N \displaystyle \prod_{i=0}^{n-1}(\lfloor M/N\rfloor - i) + n(r)\prod_{j=0}^{n-2}(\lfloor M/N\rfloor - j) \leq \prod_{l=0}^{n-1}(M - l)$
+
+$ \to N \displaystyle \prod_{i=0}^{n-1}(\lfloor M/N\rfloor - i) + (n-1) (r) \prod_{j=0}^{n-2}(\lfloor M/N\rfloor - j) + (r)\prod_{j=0}^{n-2}(\lfloor M/N\rfloor - j) \leq \prod_{l=0}^{n-1}(M - l)$\\
+
+$\to N \displaystyle \prod_{i=0}^{n-1}(\lfloor M/N\rfloor - i) + (n-1) (r)\prod_{j=0}^{n-2}(\lfloor M/N\rfloor - j)  \leq \prod_{l=0}^{n-1}(M - l) - (r)\prod_{j=0}^{n-2}(\lfloor M/N\rfloor - j)$ \\ \vspace{0.5in}
+
+Note that by assumption we have that $r \neq 0 \to \lfloor M/N \rfloor < M/N < M$ where $N > 1$ also gives that $\lfloor M/N \rfloor < M/N < M - 1 \to \lfloor M/N \rfloor - n < M/N - n < M -1 -n \to \lfloor M/N \rfloor - n + 1 < M/N - n + 1 < M - n$ \\
+
+The formula for the inductive step is given by:
+
+\end{center}
+
+$P(R = 1 | N, M, n+1) =  \frac{N \displaystyle \prod_{j=0}^{(n+1)-1}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{(n+1)-1} (M - i)}   +  \frac{(n+1)(r) \displaystyle \prod_{j=0}^{(n+1)-2}(\lfloor M/N\rfloor - j)}{\displaystyle \prod_{i=0}^{(n+1)-1} (M - i)}$\\
+
+
+
+We need to show that:
+
+\begin{center}
+
+$ N \displaystyle \prod_{i=0}^{n}(\lfloor M/N\rfloor - i) + n (r)\prod_{j=0}^{n-1}(\lfloor M/N\rfloor - j)    \leq  \prod_{l=0}^{n}(M - l)  -  (r)\prod_{j=0}^{n-1}(\lfloor M/N\rfloor - j)$
+
+\end{center}
+
+Rewriting this in terms of the previous inequality yields:
+
+\begin{center}
+
+
+
+$  N \prod_{i=0}^{n-1}(\lfloor M/N\rfloor - i)(\lfloor M/N\rfloor - n) + n (r)\prod_{j=0}^{n-2}(\lfloor M/N\rfloor - j) (\lfloor M/N\rfloor - n + 1)$\\
+
+$ \leq (\lfloor M/N\rfloor - n + 1) N \prod_{i=0}^{n-1}(\lfloor M/N\rfloor - i) + n (r)\prod_{j=0}^{n-2}(\lfloor M/N\rfloor - j) (\lfloor M/N\rfloor - n + 1)$ \\ \vspace{0.3in}
+By the inductive hypothesis: \\
+$\leq (\lfloor M/N\rfloor - n + 1) \prod_{l=0}^{n-1}(M - l) - (r)(\lfloor M/N\rfloor - n + 1)\prod_{j=0}^{n-2}(\lfloor M/N\rfloor - j)$\\
+$\leq (M-n)\prod_{l=0}^{n-1}(M - l)  -  (r)(\lfloor M/N\rfloor - n + 1)\prod_{j=0}^{n-2}(\lfloor M/N\rfloor - j)$\\
+
+$= \prod_{l=0}^{n}(M - l)  -  (r)\prod_{j=0}^{n-1}(\lfloor M/N\rfloor - j)$
+
+
+
+\end{center}
+Which gives us that $0 \leq P(R = 1 | N, M, k) \leq 1$ for all $k \geq 2$ and $r \neq 0$. 
+\end{proof}
+
+\subsection{R Simulation}
+Simulate final formula with three paramters:
+
+
+
+```{r, tidy=TRUE, tidy.opts=list(width.cutoff=50)}
+#Revolution Probability Calculator for a given number of players, N 
+genRevolutionProbSeq <- function(N, M, k){
+  
+  #number of cards dealt to each player
+  numCards <- floor(M/N)
+  
+  #calculate the remainder
+  r <- M- N*numCards
+
+  
+  #left hand side numerator
+  numerator_lhs <- N
+  for(i in 0:(k-1)){
+    numerator_lhs <- numerator_lhs*(numCards - i)
+  }
+  
+  #left had side denominator
+  denominator <- 1
+  for(i in 0:(k-1)){
+    denominator <-denominator*(M - i)
+  }
+
+  #if there is a remainder, calculate the right hand side 
+  if(r != 0){
+     numerator_rhs <-k*r
+     for(j in 0:(k-2)){
+       numerator_rhs <- numerator_rhs*(numCards - j)
+     }
+  }
+  else{
+    numerator_rhs <- 0
+  }
+  
+  return(numerator_lhs/denominator + numerator_rhs/denominator)
+  
+}
+
+players <- c(3:40)
+probabilities <- vector()
+for(i in players){
+  probabilities[i-2] <- genRevolutionProbSeq(i, 80, 2)
+}
+
+plot(players, probabilities, type = "h", main = "Stacked Dealing Probability", xlab = "# Players", ylab = "P(R=1)", col = "blue")
+
+```
+
+
+```{r, echo = FALSE}
+
+Prob_round <- round(probabilities, digits = 4)
+
+df <- data.frame(players[1:10], Prob_round[1:10])
+df[,3] <- data.frame(players[11:20])
+df[,4] <- data.frame(Prob_round[11:20])
+df[,5] <- data.frame(players[21:30])
+df[,6] <- data.frame(Prob_round[21:30])
+names(df) <- c("Players", "Rev Probability", "Players", "Rev Probability", "Players", "Rev Probability")
+library(gtable)
+g <- tableGrob(df, rows = NULL)
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = nrow(g), l = 1, r = ncol(g))
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 1, l = 1, r = ncol(g))
+grid.newpage()
+grid.draw(g)
+
+df2 <-  data.frame(players[31:38], Prob_round[31:38])
+names(df2) <- c("Players", "Rev Probability")
+g2 <- tableGrob(df2, rows = NULL)
+g2 <- gtable_add_grob(g2,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = nrow(g2), l = 1, r = ncol(g2))
+g2 <- gtable_add_grob(g2,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 1, l = 1, r = ncol(g2))
+grid.newpage()
+grid.draw(g2)
+
+```
+
+Sure enough we get the same probabilities as before!
+
+Now what happens if we fix $N$ and we vary $k$?
+
+```{r, tidy=TRUE, tidy.opts=list(width.cutoff=50)}
+M = 80
+N = 4
+objects <- c(2:21)
+probabilities <- vector()
+for(i in objects){
+  probabilities[i-1] <- genRevolutionProbSeq(N, M, objects[i-1])
+}
+
+
+plot(objects, probabilities, type = "h", main = "Revolution Dealing Probability with k objects", xlab = "k", ylab = "P(R=1)", col = "blue")
+```
+
+
+
+```{r, echo=FALSE}
+
+probabilities <- round(probabilities, digits = 8)
+df <- data.frame(objects[1:10], probabilities[1:10])
+df[,3] <- data.frame(objects[11:20])
+df[,4] <- data.frame(probabilities[11:20])
+names(df) <- c("Objects", "Rev Probability", "Objects", "Rev Probability" )
+library(gtable)
+g <- tableGrob(df, rows = NULL)
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = nrow(g), l = 1, r = ncol(g))
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 1, l = 1, r = ncol(g))
+grid.newpage()
+grid.draw(g)
+
+
+
+```
+
+<br />
+From the above graph we can see that when there are 80 cards, and 4 players, the ideal number of cards for a 'Revolution' to occur is $k=2$. 
+
+
+\section{\textbf{\textbf{Conclusion and Further Research}}}
+
+This is a very interesting set of problems that arose out of a simple idea to calculate the probability that if I was at the bottom, say the Greater/Lesser Peon, I wouldn't have to give up any cards. It is not suprising to me that it is equally likely to have a revolution if the cards are dealt in stacks rather than one at a time, the randomness of the cards doesn't change. What is suprising is the nice formulas that come out of these combinatorial identities and the fact that it can be generalized so well. The reason these formulas are the same is because we have the same constraint in both scenarios, once a jester is passed out, there are a limited number of slots that the next jester can be placed in order to qualify for a revolution. One idea for further research is to use the above results with varying $k$ for a fixed $N$ and $M$ to see how the probabilities differ. The main result that will drive further research and simulation is the fact that if you have many bernoulli random variables in an experiement, the sum of them results in a binomial. Say we play $n$ rounds of The Great Dalmuti card game. What is the probability that there will be some fixed number of revolutions? Each round $i$ is a bernoulli random variable, $X_i \sim Ber(p)$ with $p$ given by the formulas above depending on how the cards are dealt. Then $\displaystyle \sum_{k =1}^n X_k \sim Bin(n,p)$. There are also other aspects of the game that I am interested in such as if you are The Great Dalmuti, or the one at the top, what is the probability that you get the '1' card? Or what is the probability that you become number one?
+
+
+
+
